@@ -1,0 +1,3 @@
+/home/pi/Ball_Detecting/build-cmake/CMakeFiles/rebuild_cache.dir
+/home/pi/Ball_Detecting/build-cmake/CMakeFiles/Ball_Detecting.dir
+/home/pi/Ball_Detecting/build-cmake/CMakeFiles/edit_cache.dir
