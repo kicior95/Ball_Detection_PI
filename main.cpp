@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <cstdio>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <array>
 #include <string>
@@ -22,10 +21,15 @@
 #include <opencv2/imgcodecs.hpp>
 
 
+#include <boost/tuple/tuple.hpp>
+#include "matplotlibcpp.h"
 
 
 using namespace std;
 using namespace cv;
+namespace plt = matplotlibcpp;
+
+
 
 enum APROX_MODE {
     RECTANGLE,
@@ -33,15 +37,11 @@ enum APROX_MODE {
 };
 
 
-struct fPoint
-{
+struct fPoint {
     fPoint(float x1, float y1) {
         x = x1;
         y = y1;
     }
-
-
-
     float x;
     float y;
 };
@@ -57,8 +57,33 @@ int MaxAreaContourId(vector <vector<cv::Point>> contours);
 string RunCMD(const char* cmd);
 
 
+
+
 int main()
 {
+   std::vector<double>  PosX_v(1000,0);
+   std::vector<double>  PosY_v(1000,0);
+
+    std::vector<double> t(1000);
+    for(int i=0;i<t.size();i++) {
+        t[i] = i;
+    }
+
+
+
+
+        plt::clf();
+        plt:: Plot plot("TEST");
+        plt:: Plot plot2("TEST");
+        plt::named_plot("PosX", t, PosX_v);
+        plt::named_plot("PosY", t, PosY_v);
+
+         plt::ylim(-250, 250);
+        int plot_refresh = 0;
+
+
+
+
 
 
     // >>>>>>>>>> Komunikacja UART z STM32
@@ -126,6 +151,7 @@ int main()
 
     while(1) {
         // >>>>>>>>>> Przechwytywanie obrazu
+
 
 
         while(cap.isOpened()) {
@@ -270,6 +296,7 @@ int main()
 
 
             // >>>>>>>>>> Wysłanie danych do STM32
+
             sprintf(UART_Data_Transmited,"%04d %04d 0000",static_cast<int>(Pos_X+1000), static_cast<int>(Pos_Y+1000));
             serialPrintf(fd,UART_Data_Transmited); // Wysyłanie wiadomości
             cout<<UART_Data_Transmited<<endl;
@@ -282,6 +309,26 @@ int main()
                 itr++;
             }
             cout<<UART_Data_Recived<<endl;
+
+            PosX_v.erase(PosX_v.begin());
+           PosY_v.erase(PosY_v.begin());
+            PosX_v.push_back((double)Pos_X);
+            PosY_v.push_back((double)Pos_Y);
+            plot_refresh ++;
+
+
+            if(plot_refresh>50) {
+               plot.update(t,PosX_v);
+               plot2.update(t,PosY_v);
+               plot_refresh = 0;
+               plt::pause(0.001);
+            }
+
+
+
+
+
+
 
             //Wyczyszczenie otrzymanej tablicy
             itr = 0;
@@ -303,7 +350,6 @@ int main()
 
             //Wyswietlenie obrazu
             imshow(Okno_01,src_rot);
-
             // >>>>>>>>>> DIAGNOSTYKA
             //imshow("Hue",hsv_channels[0]);
             //imshow("Saturation",hsv_channels[2]);
@@ -322,6 +368,7 @@ int main()
 
     }
     // <<<<<<<<<< Cykl pracy urządzenia
+
 }
 
 
