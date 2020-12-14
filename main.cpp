@@ -100,9 +100,10 @@ float AngleBetweenVector(Vector2D Wektor_01, Vector2D  Wektor_02) {
 Vector2D FlipedVector(Vector2D Wektor_01) {
     Vector2D results;
     results.x = Wektor_01.x;
-    results.y = Wektor_01.y;
+    results.y = -Wektor_01.y;
     return results;
 }
+
 
 Vector2D CalcPos(Vector2D Ball_Pos_Image, Vector2D  CircleCenter, float AngleOfMainVector) {
     Vector2D temp = SubtractVector(FlipedVector(Ball_Pos_Image), CircleCenter);
@@ -140,16 +141,15 @@ int main()
 
     //Wyznaczenie glownej osi platformy
     Vector2D MainAxis;
-    MainAxis = SubtractVector(ReversVector(CenterOfPlatform),FlipedVector(Joint_01));
+    MainAxis = ReversVector(SubtractVector(CenterOfPlatform, FlipedVector(Joint_01)));
 
     //Wyznaczenie katu obrotu osi platformy
     float RotMainAxis = AngleBetweenVector(ImageAxisX, MainAxis);
-
-
     // <<<<<<<<<< Inicjalizacja stałych
 
 
 
+     // >>>>>>>>>> Przygotowanie wykresow
     std::vector<double>  PosX_v(1000,0);
     std::vector<double>  PosY_v(1000,0);
 
@@ -163,13 +163,13 @@ int main()
 
     plt::clf();
     plt:: Plot plot("TEST");
-    plt:: Plot plot2("TEST");
+    plt:: Plot plot2("TEST2");
     plt::named_plot("PosX", t, PosX_v);
     plt::named_plot("PosY", t, PosY_v);
-
+plt::grid(1);
     plt::ylim(-250, 250);
     int plot_refresh = 0;
-
+  // <<<<<<<<<< Przygotowanie wykresow
 
 
 
@@ -380,9 +380,9 @@ int main()
                 circle(src_rot, Point(Joint_02.x, Joint_02.y) , 2, Kolor_03, -1);
                 circle(src_rot, Point(Joint_03.x, Joint_03.y) , 2, Kolor_03, -1);
                 //Wyrysowanie osi glownej
-                line(src_rot,Point(CenterOfPlatform.x, CenterOfPlatform.y), Point(Joint_01.x, Joint_01.y), Kolor_04);
+                line(src_rot,Point(FlipedVector(CenterOfPlatform).x, FlipedVector(CenterOfPlatform).y), Point(Joint_01.x, Joint_01.y), Kolor_04);
                 //Wysysowanie srodka platformy
-                circle(src_rot, Point(CenterOfPlatform.x, CenterOfPlatform.y) , 2, Kolor_03, -1);
+                circle(src_rot, Point(FlipedVector(CenterOfPlatform).x, FlipedVector(CenterOfPlatform).y) , 2, Kolor_03, -1);
 
                 //Wyznaczenie polozenia srodka obiektu
                 Pos_X = Ball.x;
@@ -441,7 +441,7 @@ int main()
             std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
             auto diff = end - begin;
             cout <<"Fps: " <<1000 * UART_Iteration / chrono::duration_cast<std::chrono::milliseconds>(diff).count() << endl;
-
+            cout <<"Fps:"<<RotMainAxis<< endl;
             //Wyrysowanie wukresow
             if(plot_refresh>50) {
                 plot.update(t,PosX_v);
