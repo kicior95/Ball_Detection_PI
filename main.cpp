@@ -27,7 +27,15 @@
 
 using namespace std;
 using namespace cv;
+
+
 namespace plt = matplotlibcpp;
+
+
+struct Vector2D {
+    float x;
+    float y;
+};
 
 
 
@@ -37,32 +45,113 @@ enum APROX_MODE {
 };
 
 
-struct fPoint {
-    fPoint(float x1, float y1) {
-        x = x1;
-        y = y1;
-    }
-    float x;
-    float y;
-};
+
 
 static APROX_MODE Mode = RECTANGLE;
-static fPoint Joint_01(0,0);
-static fPoint Joint_02(0,0);
-static fPoint Joint_03(0,0);
-static fPoint Zero(0,0);
-static fPoint Ball(0,0);
+static Vector2D ImageAxisX;
+static Vector2D ImageAxisY;
+static Vector2D Joint_01;
+static Vector2D Joint_02;
+static Vector2D Joint_03;
+static Vector2D Ball;
+static Vector2D BallPosImage;
 
 int MaxAreaContourId(vector <vector<cv::Point>> contours);
 string RunCMD(const char* cmd);
 
+Vector2D CircleCenter(Vector2D Point01, Vector2D Point02, Vector2D Point03);
 
+Vector2D SubtractVector(Vector2D Wektor_01, Vector2D Wektor_02) {
+    Vector2D results;
+    results.x = Wektor_01.x - Wektor_02.x;
+    results.y = Wektor_01.y - Wektor_02.y;
+    return results;
+}
 
+Vector2D ReversVector(Vector2D Wektor_01) {
+    Vector2D results;
+    results.x = - Wektor_01.x;
+    results.y = - Wektor_01.y;
+    return results;
+}
+
+Vector2D ScalarVectorMultiplication(Vector2D Wektor, float Skalar) {
+    Vector2D results;
+    results.x = Skalar * Wektor.x;
+    results.y = Skalar * Wektor.y;
+    return results;
+}
+
+float VectorScalar(Vector2D Wektor_01, Vector2D  Wektor_02) {
+    float results = Wektor_01.x * Wektor_02.x + Wektor_01.y * Wektor_02.y;
+    return results;
+}
+
+float VectorNorm(Vector2D Wektor) {
+    float VectorNorm = sqrt(pow(Wektor.x, 2) + pow(Wektor.y, 2));
+    return VectorNorm;
+}
+
+float AngleBetweenVector(Vector2D Wektor_01, Vector2D  Wektor_02) {
+    float results = acos(VectorScalar(Wektor_01, Wektor_02)/(VectorNorm(Wektor_01) * VectorNorm(Wektor_02)));
+    return results;
+}
+
+Vector2D FlipedVector(Vector2D Wektor_01) {
+    Vector2D results;
+    results.x = Wektor_01.x;
+    results.y = Wektor_01.y;
+    return results;
+}
+
+Vector2D CalcPos(Vector2D Ball_Pos_Image, Vector2D  CircleCenter, float AngleOfMainVector) {
+    Vector2D temp = SubtractVector(FlipedVector(Ball_Pos_Image), CircleCenter);
+    Vector2D results;
+    results.x = cos(AngleOfMainVector) * temp.x + sin(AngleOfMainVector) * temp.y;
+    results.y = -sin(AngleOfMainVector) * temp.x + cos(AngleOfMainVector) * temp.y;
+    return results;
+}
 
 int main()
 {
-   std::vector<double>  PosX_v(1000,0);
-   std::vector<double>  PosY_v(1000,0);
+
+    // >>>>>>>>>> Inicjalizacja stałych
+
+    ImageAxisX.x = 100;
+    ImageAxisX.y = 0;
+    ImageAxisY.x = 0;
+    ImageAxisY.y = 100;
+
+    Joint_01.x = 115;
+    Joint_01.y = 148;
+    Joint_02.x = 131;
+    Joint_02.y = 499;
+    Joint_03.x = 429;
+    Joint_03.y = 316;
+    Ball.x  = 0;
+    Ball.y  = 0;
+    BallPosImage.x = 0;
+    BallPosImage.y = 0;
+
+
+    // Wyznaczenie srodka platformy
+    Vector2D CenterOfPlatform;
+    CenterOfPlatform = CircleCenter(FlipedVector(Joint_01), FlipedVector(Joint_02), FlipedVector(Joint_03));
+
+    //Wyznaczenie glownej osi platformy
+    Vector2D MainAxis;
+    MainAxis = SubtractVector(ReversVector(CenterOfPlatform),FlipedVector(Joint_01));
+
+    //Wyznaczenie katu obrotu osi platformy
+    float RotMainAxis = AngleBetweenVector(ImageAxisX, MainAxis);
+
+
+    // <<<<<<<<<< Inicjalizacja stałych
+
+
+
+    std::vector<double>  PosX_v(1000,0);
+    std::vector<double>  PosY_v(1000,0);
 
     std::vector<double> t(1000);
     for(int i=0;i<t.size();i++) {
@@ -72,14 +161,14 @@ int main()
 
 
 
-        plt::clf();
-        plt:: Plot plot("TEST");
-        plt:: Plot plot2("TEST");
-        plt::named_plot("PosX", t, PosX_v);
-        plt::named_plot("PosY", t, PosY_v);
+    plt::clf();
+    plt:: Plot plot("TEST");
+    plt:: Plot plot2("TEST");
+    plt::named_plot("PosX", t, PosX_v);
+    plt::named_plot("PosY", t, PosY_v);
 
-         plt::ylim(-250, 250);
-        int plot_refresh = 0;
+    plt::ylim(-250, 250);
+    int plot_refresh = 0;
 
 
 
@@ -117,17 +206,18 @@ int main()
     // <<<<<<<<<< Komunikacja UART z STM32
 
     // >>>>>>>>>> Przechwytywanie obrazu z kamerki
+    // Inicjalizacja zmiennych
     VideoCapture cap;
     Mat src;
     cap.open(0);
 
+    //Konfiguracja sprzetu
     RunCMD("v4l2-ctl -d /dev/video0 -c auto_exposure=0 -c exposure_time_absolute=120 -c iso_sensitivity_auto=1 -c iso_sensitivity=4 -c power_line_frequency=1");
-
-
     cap.set(CAP_PROP_FRAME_WIDTH , 640);
     cap.set(CAP_PROP_FRAME_WIDTH , 480);
     cap.set(CAP_PROP_FRAME_WIDTH , 480);
 
+    //Uruchomienie urzadzenia
     if (!cap.isOpened()) {
         cout<<"Błąd otwarcia kamerki"<<endl;
         return -1;
@@ -138,12 +228,6 @@ int main()
     // >>>>>>>>>> Utworzenie okna
     string Okno_01 = "Okno01";
     namedWindow(Okno_01, WINDOW_AUTOSIZE);
-
-
-    //int Value_Min = 0;
-    // int Value_Max = 0;
-    //createTrackbar( "Zmienna 01", Okno_01, &Value_Min, 255);
-    // createTrackbar( "Zmienna 02", Okno_01, &Value_Max, 255);
     // <<<<<<<<<< Utworzenie okna
 
     // >>>>>>>>>> Cykl pracy urządzenia
@@ -230,9 +314,14 @@ int main()
                     }
                     if(DetectBalls.size() > 0) {
                         Contour_Id = MaxAreaContourId(DetectBalls);
-                        //Point center;
+                        //Srodek geometryczny detalu na obrazie;
                         center.x = DetectBallsBox[static_cast<uint>(Contour_Id)].x + DetectBallsBox[static_cast<uint>(Contour_Id)].width / 2;
                         center.y = DetectBallsBox[static_cast<uint>(Contour_Id)].y + DetectBallsBox[static_cast<uint>(Contour_Id)].height / 2;
+
+                        //Wyznaczenie polozenia srodka obiektu
+                        BallPosImage.x = center.x;
+                        BallPosImage.y = center.y;
+                        Ball = CalcPos(BallPosImage, CenterOfPlatform, RotMainAxis);
                     }
 
                 }
@@ -258,6 +347,11 @@ int main()
                         center.x = static_cast<float>(mu.m10 / mu.m00); // x-coordinate
                         center.y = static_cast<float>(mu.m01 / mu.m00); // y-coordinate
 
+                        //Wyznaczenie polozenia srodka obiektu
+                        BallPosImage.x = center.x;
+                        BallPosImage.y = center.y;
+                        Ball = CalcPos(BallPosImage, CenterOfPlatform, RotMainAxis);
+
                     }
 
                 }
@@ -271,17 +365,28 @@ int main()
                 //Definicja kolorów
                 Scalar Kolor_01 = Scalar(20,150,20);
                 Scalar Kolor_02 = Scalar(0, 255, 0);
+                Scalar Kolor_03 = Scalar(255, 255, 0);
+                Scalar Kolor_04 = Scalar(0, 255, 255);
+
+
                 //Wyswietlenie wykrytego konturu
                 drawContours(src_rot, DetectBalls, Contour_Id, Kolor_02, 1);
                 //Wyswietlenie prostokąta opisanego na konturze
                 rectangle(src_rot, DetectBallsBox[static_cast<uint>(Contour_Id)], Kolor_02, 2);
                 //Wyrysowanie srodka okregu
                 circle(src_rot, center, 2, Kolor_01, -1);
-
+                //Wyrysowanie zlaczy platformy
+                circle(src_rot, Point(Joint_01.x, Joint_01.y) , 2, Kolor_03, -1);
+                circle(src_rot, Point(Joint_02.x, Joint_02.y) , 2, Kolor_03, -1);
+                circle(src_rot, Point(Joint_03.x, Joint_03.y) , 2, Kolor_03, -1);
+                //Wyrysowanie osi glownej
+                line(src_rot,Point(CenterOfPlatform.x, CenterOfPlatform.y), Point(Joint_01.x, Joint_01.y), Kolor_04);
+                //Wysysowanie srodka platformy
+                circle(src_rot, Point(CenterOfPlatform.x, CenterOfPlatform.y) , 2, Kolor_03, -1);
 
                 //Wyznaczenie polozenia srodka obiektu
-                Pos_X = center.x-src_rot.cols/2;
-                Pos_Y = center.y-src_rot.rows/2;
+                Pos_X = Ball.x;
+                Pos_Y = Ball.y;
 
                 // Wypisanie wyniku na ekranie
                 stringstream sstr;
@@ -310,43 +415,41 @@ int main()
             }
             cout<<UART_Data_Recived<<endl;
 
+
+            // Zapisanie danych do historii
             PosX_v.erase(PosX_v.begin());
-           PosY_v.erase(PosY_v.begin());
+            PosY_v.erase(PosY_v.begin());
             PosX_v.push_back((double)Pos_X);
             PosY_v.push_back((double)Pos_Y);
             plot_refresh ++;
 
-
-            if(plot_refresh>50) {
-               plot.update(t,PosX_v);
-               plot2.update(t,PosY_v);
-               plot_refresh = 0;
-               plt::pause(0.001);
-            }
-
-
-
-
-
-
-
             //Wyczyszczenie otrzymanej tablicy
             itr = 0;
-            if(itr <= 33) {
+            while(itr <= 33) {
                 UART_Data_Recived[itr] = 0;
                 itr ++;
             }
-            UART_Iteration++;
-            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-            auto diff = end - begin;
-
-            cout <<"Fps: " <<1000 * UART_Iteration / chrono::duration_cast<std::chrono::milliseconds>(diff).count() << endl;
 
             // <<<<<<<<<< Odbiór danych danych do STM32
 
 
 
             // >>>>>>>>>> GUI: Oczekiwanie na akcje uzytkownika
+
+            //Wyznaczenie predkosci akwiztcji danych
+            UART_Iteration++;
+            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+            auto diff = end - begin;
+            cout <<"Fps: " <<1000 * UART_Iteration / chrono::duration_cast<std::chrono::milliseconds>(diff).count() << endl;
+
+            //Wyrysowanie wukresow
+            if(plot_refresh>50) {
+                plot.update(t,PosX_v);
+                plot2.update(t,PosY_v);
+                plot_refresh = 0;
+                plt::pause(0.001);
+            }
+
 
             //Wyswietlenie obrazu
             imshow(Okno_01,src_rot);
@@ -399,8 +502,10 @@ string RunCMD(const char* cmd) {
     return result;
 }
 
-fPoint CircleCenter(fPoint Point01,fPoint Point02,fPoint Point03){
-    fPoint Center(0,0);
+
+
+Vector2D CircleCenter(Vector2D Point01, Vector2D Point02, Vector2D Point03) {
+    Vector2D Center;
     Center.x = static_cast<float>(0.5f * ((Point02.x * Point02.x * Point03.y + Point02.y * Point02.y * Point03.y - Point01.x * Point01.x * Point03.y + Point01.x * Point01.x * Point02.y - Point01.y * Point01.y * Point03.y + Point01.y * Point01.y * Point02.y + Point01.y * Point03.x * Point03.x + Point01.y * Point03.y * Point03.y - Point01.y * Point02.x * Point02.x - Point01.y * Point02.y * Point02.y - Point02.y * Point03.x * Point03.x - Point02.y * Point03.y * Point03.y) / (Point01.y * Point03.x - Point01.y * Point02.x - Point02.y * Point03.x - Point03.y * Point01.x + Point03.y * Point02.x + Point02.y * Point01.x)));
     Center.y = static_cast<float>(0.5f * ((-Point01.x * Point03.x * Point03.x - Point01.x * Point03.y * Point03.y + Point01.x * Point02.x * Point02.x + Point01.x * Point02.y * Point02.y + Point02.x * Point03.x * Point03.x + Point02.x * Point03.y * Point03.y - Point02.x * Point02.x * Point03.x - Point02.y * Point02.y * Point03.x + Point01.x * Point01.x * Point03.x - Point01.x * Point01.x * Point02.x + Point01.y * Point01.y * Point03.x - Point01.y * Point01.y * Point02.x) / (Point01.y * Point03.x - Point01.y * Point02.x - Point02.y * Point03.x - Point03.y * Point01.x + Point03.y * Point02.x + Point02.y * Point01.x)));
     return Center;
