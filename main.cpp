@@ -149,11 +149,14 @@ int main()
 
 
 
-     // >>>>>>>>>> Przygotowanie wykresow
-    std::vector<double>  PosX_v(1000,0);
-    std::vector<double>  PosY_v(1000,0);
+    // >>>>>>>>>> Przygotowanie wykresow
+    std::vector<double>  PosX_v(400,0);
+    std::vector<double>  RotX_v(400,0);
 
-    std::vector<double> t(1000);
+    std::vector<double>  PosY_v(400,0);
+    std::vector<double>  RotY_v(400,0);
+
+    std::vector<double> t(400);
     for(int i=0;i<t.size();i++) {
         t[i] = i;
     }
@@ -161,15 +164,40 @@ int main()
 
 
 
-    plt::clf();
-    plt:: Plot plot("TEST");
-    plt:: Plot plot2("TEST2");
-    plt::named_plot("PosX", t, PosX_v);
-    plt::named_plot("PosY", t, PosY_v);
-plt::grid(1);
+    // plt::clf();
+    plt::figure_size(480, 320);
+    plt::title("Pozycja X");
+
+    plt:: subplot(2,1,1);
+    plt:: Plot plot1("PosX", t, PosX_v);
+    plt::grid(1);
+    plt::legend();
     plt::ylim(-250, 250);
+
+
+    plt:: subplot(2,1,2);
+    plt:: Plot plot3("RotY", t, RotY_v);
+    plt::grid(1);
+    plt::legend();
+    plt::ylim(-12, 12);
+
+    plt::figure_size(480, 320);
+    plt::title("Pozycja Y");
+
+    plt:: subplot(2,1,1);
+    plt:: Plot plot2("PosY", t, PosY_v);
+    plt::grid(1);
+    plt::legend();
+    plt::ylim(-250, 250);
+
+
+    plt:: subplot(2,1,2);
+    plt:: Plot plot4("RotX", t, RotX_v);
+    plt::grid(1);
+    plt::legend();
+    plt::ylim(-12, 12);
     int plot_refresh = 0;
-  // <<<<<<<<<< Przygotowanie wykresow
+    // <<<<<<<<<< Przygotowanie wykresow
 
 
 
@@ -390,7 +418,7 @@ plt::grid(1);
 
                 // Wypisanie wyniku na ekranie
                 stringstream sstr;
-                sstr << "(" << Pos_X << "," << Pos_Y << ")";
+                sstr << "(" << static_cast<int>(Pos_X) << "," << static_cast<int>(Pos_Y) << ")";
                 cout<<sstr.str()<<endl;
                 putText(src_rot, sstr.str(),
                         Point(static_cast<int>(center.x + 3), static_cast<int>(center.y - 3)),
@@ -421,6 +449,38 @@ plt::grid(1);
             PosY_v.erase(PosY_v.begin());
             PosX_v.push_back((double)Pos_X);
             PosY_v.push_back((double)Pos_Y);
+
+            char tempchar[6] = "00.00";
+            tempchar[0] = UART_Data_Recived[0];
+            tempchar[1] = UART_Data_Recived[1];
+            tempchar[2] = UART_Data_Recived[2];
+            tempchar[3] = UART_Data_Recived[3];
+            tempchar[4] = UART_Data_Recived[4];
+
+            try {
+                float temp =  atof(tempchar);
+                RotX_v.erase(RotX_v.begin());
+                RotX_v.push_back((double)temp);
+            } catch (const std::runtime_error& e) {
+
+            }
+
+
+            tempchar[0] = UART_Data_Recived[10];
+            tempchar[1] = UART_Data_Recived[11];
+            tempchar[2] = UART_Data_Recived[12];
+            tempchar[3] = UART_Data_Recived[13];
+            tempchar[4] = UART_Data_Recived[14];
+
+            try {
+                float temp =  atof(tempchar);
+                RotY_v.erase(RotY_v.begin());
+                RotY_v.push_back((double)temp);
+            } catch (const std::runtime_error& e) {
+
+            }
+
+
             plot_refresh ++;
 
             //Wyczyszczenie otrzymanej tablicy
@@ -444,8 +504,12 @@ plt::grid(1);
             cout <<"Fps:"<<RotMainAxis<< endl;
             //Wyrysowanie wukresow
             if(plot_refresh>50) {
-                plot.update(t,PosX_v);
+                plot1.update(t,PosX_v);
                 plot2.update(t,PosY_v);
+
+                plot3.update(t,RotY_v);
+                plot4.update(t,RotX_v);
+
                 plot_refresh = 0;
                 plt::pause(0.001);
             }
