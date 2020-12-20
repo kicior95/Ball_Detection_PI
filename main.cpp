@@ -123,12 +123,12 @@ int main()
     ImageAxisY.x = 0;
     ImageAxisY.y = 100;
 
-    Joint_01.x = 115;
-    Joint_01.y = 148;
-    Joint_02.x = 131;
-    Joint_02.y = 499;
-    Joint_03.x = 429;
-    Joint_03.y = 316;
+    Joint_01.x = 103;
+    Joint_01.y = 131;
+    Joint_02.x = 122;
+    Joint_02.y = 550;
+    Joint_03.x = 463;
+    Joint_03.y = 320;
     Ball.x  = 0;
     Ball.y  = 0;
     BallPosImage.x = 0;
@@ -346,6 +346,7 @@ int main()
                         center.x = DetectBallsBox[static_cast<uint>(Contour_Id)].x + DetectBallsBox[static_cast<uint>(Contour_Id)].width / 2;
                         center.y = DetectBallsBox[static_cast<uint>(Contour_Id)].y + DetectBallsBox[static_cast<uint>(Contour_Id)].height / 2;
 
+                        cout<<center.x <<"   "<<center.y<<endl;
                         //Wyznaczenie polozenia srodka obiektu
                         BallPosImage.x = center.x;
                         BallPosImage.y = center.y;
