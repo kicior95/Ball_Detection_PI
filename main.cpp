@@ -56,6 +56,10 @@ static Vector2D Joint_03;
 static Vector2D Ball;
 static Vector2D BallPosImage;
 
+float Pos_X_Set = 50;
+float Pos_Y_Set = 50;
+int mode = 1;
+
 int MaxAreaContourId(vector <vector<cv::Point>> contours);
 string RunCMD(const char* cmd);
 
@@ -151,10 +155,16 @@ int main()
 
     // >>>>>>>>>> Przygotowanie wykresow
     std::vector<double>  PosX_v(400,0);
+    std::vector<double>  SetPosX_v(400, Pos_Y_Set);
     std::vector<double>  RotX_v(400,0);
 
     std::vector<double>  PosY_v(400,0);
+    std::vector<double>  SetPosY_v(400, Pos_X_Set);
     std::vector<double>  RotY_v(400,0);
+
+    std::vector<double>  PosZ_v(400,0);
+    std::vector<double>  SetPosZ_v(400, Pos_Y_Set);
+    std::vector<double>  RotZ_v(400,0);
 
     std::vector<double> t(400);
     for(int i=0;i<t.size();i++) {
@@ -164,39 +174,81 @@ int main()
 
 
 
-    // plt::clf();
-    plt::figure_size(480, 320);
-    plt::title("Pozycja X");
 
-    plt:: subplot(2,1,1);
-    plt:: Plot plot1("PosX", t, PosX_v);
-    plt::grid(1);
-    plt::legend();
-    plt::ylim(-250, 250);
+        //Wykres 01
+        plt::figure_size(480, 320);
+        plt::title("Pozycja X");
 
-
-    plt:: subplot(2,1,2);
-    plt:: Plot plot3("RotY", t, RotY_v);
-    plt::grid(1);
-    plt::legend();
-    plt::ylim(-12, 12);
-
-    plt::figure_size(480, 320);
-    plt::title("Pozycja Y");
-
-    plt:: subplot(2,1,1);
-    plt:: Plot plot2("PosY", t, PosY_v);
-    plt::grid(1);
-    plt::legend();
-    plt::ylim(-250, 250);
+        plt:: subplot(2,1,1);
+        plt:: Plot plot10("Pos01", t, PosX_v);
+        plt:: Plot plot12("Set01", t, SetPosX_v);
+        plt::grid(1);
+        plt::legend();
+        if(mode == 1) {
+             plt::ylim(-250, 250);
+        } else if (mode == 0) {
+             plt::ylim(-250, 250);
+        }
 
 
-    plt:: subplot(2,1,2);
-    plt:: Plot plot4("RotX", t, RotX_v);
-    plt::grid(1);
-    plt::legend();
-    plt::ylim(-12, 12);
-    int plot_refresh = 0;
+
+        plt:: subplot(2,1,2);
+        plt:: Plot plot11("Rot01", t, RotY_v);
+        plt::grid(1);
+        plt::legend();
+
+        if(mode == 1) {
+             plt::ylim(-35, 35);
+        } else if (mode == 0) {
+             plt::ylim(-12, 12);
+        }
+
+        //Wykres 02
+        plt::figure_size(480, 320);
+        plt::title("Pozycja Y");
+
+        plt:: subplot(2,1,1);
+        plt:: Plot plot20("Pos02", t, PosY_v);
+        plt:: Plot plot22("Set02", t, SetPosY_v);
+        plt::grid(1);
+        plt::legend();
+        plt::ylim(-250, 250);
+
+
+        plt:: subplot(2,1,2);
+        plt:: Plot plot21("Rot02", t, RotX_v);
+        plt::grid(1);
+        plt::legend();
+        if(mode == 1) {
+             plt::ylim(-35, 35);
+        } else if (mode == 0) {
+             plt::ylim(-12, 12);
+        }
+
+        //Wykres 03
+        plt::figure_size(480, 320);
+        plt::title("Pozycja 03");
+
+        plt:: subplot(2,1,1);
+        plt:: Plot plot30("Pos03", t, PosZ_v);
+        plt:: Plot plot32("Set03", t, SetPosZ_v);
+        plt::grid(1);
+        plt::legend();
+        plt::ylim(-250, 250);
+
+
+        plt:: subplot(2,1,2);
+        plt:: Plot plot31("Rot03", t, RotZ_v);
+        plt::grid(1);
+        plt::legend();
+        if(mode == 1) {
+             plt::ylim(-35, 35);
+        } else if (mode == 0) {
+             plt::ylim(-12, 12);
+        }
+
+
+     int plot_refresh = 0;
     // <<<<<<<<<< Przygotowanie wykresow
 
 
@@ -205,8 +257,8 @@ int main()
 
     // >>>>>>>>>> Komunikacja UART z STM32
     int UART_Iteration = 0;
-    char UART_Data_Recived[35];
-    UART_Data_Recived[34] = '\0';
+    char UART_Data_Recived[54];
+    UART_Data_Recived[54] = '\0';
     char UART_Data_Transmited[15] = "1000 1001 1002";
 
 
@@ -373,8 +425,8 @@ int main()
                         Contour_Id = MaxAreaContourId(DetectBalls);
                         //Wyznaczenie środka
                         Moments mu = moments(contours[static_cast<uint>(Contour_Id)], false);
-                        center.x = static_cast<float>(mu.m10 / mu.m00); // x-coordinate
-                        center.y = static_cast<float>(mu.m01 / mu.m00); // y-coordinate
+                        center.x = static_cast<float>(mu.m10 / mu.m00); // Wspolrzedna X
+                        center.y = static_cast<float>(mu.m01 / mu.m00); // Wspolrzedna Y
 
                         //Wyznaczenie polozenia srodka obiektu
                         BallPosImage.x = center.x;
@@ -431,27 +483,30 @@ int main()
 
             // >>>>>>>>>> Wysłanie danych do STM32
 
-            sprintf(UART_Data_Transmited,"%04d %04d 0000",static_cast<int>(Pos_X+1000), static_cast<int>(Pos_Y+1000));
+            sprintf(UART_Data_Transmited,"%04d %04d %04d %04d",static_cast<int>(Pos_X+1000), static_cast<int>(Pos_Y+1000),
+                    static_cast<int>(Pos_X_Set+1000), static_cast<int>(Pos_Y_Set+1000));
             serialPrintf(fd,UART_Data_Transmited); // Wysyłanie wiadomości
             cout<<UART_Data_Transmited<<endl;
             // <<<<<<<<<< Wysłanie danych do STM32
 
             // >>>>>>>>>> Odbiór danych danych do STM32
             int itr = 0;
-            while (serialDataAvail(fd) && itr <= 33) {
+            while (serialDataAvail(fd) && itr <= 52) {
                 UART_Data_Recived[itr] = static_cast<char>(serialGetchar(fd));
                 itr++;
             }
             cout<<UART_Data_Recived<<endl;
 
 
-            // Zapisanie danych do historii
-            PosX_v.erase(PosX_v.begin());
-            PosY_v.erase(PosY_v.begin());
-            PosX_v.push_back((double)Pos_X);
-            PosY_v.push_back((double)Pos_Y);
+            // >>>>>>>>>> Zapisanie danych do historii
+            //PosX_v.erase(PosX_v.begin());
+           // PosY_v.erase(PosY_v.begin());
+            //PosX_v.push_back((double)Pos_X);
+            //PosY_v.push_back((double)Pos_Y);
 
             char tempchar[6] = "00.00";
+
+            // Zapisanie obecnej pozycji 01
             tempchar[0] = UART_Data_Recived[0];
             tempchar[1] = UART_Data_Recived[1];
             tempchar[2] = UART_Data_Recived[2];
@@ -459,29 +514,133 @@ int main()
             tempchar[4] = UART_Data_Recived[4];
 
             try {
-                float temp =  atof(tempchar);
+                float temp =  atof(tempchar) - 500;
+                PosX_v.erase(PosX_v.begin());
+                PosX_v.push_back((double)temp);
+            } catch (const std::runtime_error& e) {
+
+            }
+             // Zapisanie obecnego sterowania 01
+            tempchar[0] = UART_Data_Recived[6];
+            tempchar[1] = UART_Data_Recived[7];
+            tempchar[2] = UART_Data_Recived[8];
+            tempchar[3] = UART_Data_Recived[9];
+            tempchar[4] = UART_Data_Recived[10];
+
+            try {
+                float temp =  atof(tempchar) - 500;
                 RotX_v.erase(RotX_v.begin());
                 RotX_v.push_back((double)temp);
             } catch (const std::runtime_error& e) {
 
             }
 
-
-            tempchar[0] = UART_Data_Recived[10];
-            tempchar[1] = UART_Data_Recived[11];
-            tempchar[2] = UART_Data_Recived[12];
-            tempchar[3] = UART_Data_Recived[13];
-            tempchar[4] = UART_Data_Recived[14];
+            // Zapisanie obecnej pozycji 02
+            tempchar[0] = UART_Data_Recived[12];
+            tempchar[1] = UART_Data_Recived[13];
+            tempchar[2] = UART_Data_Recived[14];
+            tempchar[3] = UART_Data_Recived[15];
+            tempchar[4] = UART_Data_Recived[16];
 
             try {
-                float temp =  atof(tempchar);
+                float temp =  atof(tempchar) - 500;
+                PosY_v.erase(PosY_v.begin());
+                PosY_v.push_back((double)temp);
+            } catch (const std::runtime_error& e) {
+
+            }
+
+            // Zapisanie obecnego sterowania 02
+            tempchar[0] = UART_Data_Recived[18];
+            tempchar[1] = UART_Data_Recived[19];
+            tempchar[2] = UART_Data_Recived[20];
+            tempchar[3] = UART_Data_Recived[21];
+            tempchar[4] = UART_Data_Recived[22];
+
+            try {
+                float temp =  atof(tempchar) - 500;
                 RotY_v.erase(RotY_v.begin());
                 RotY_v.push_back((double)temp);
             } catch (const std::runtime_error& e) {
 
             }
 
+            // Zapisanie obecnej pozycji 03
+            tempchar[0] = UART_Data_Recived[24];
+            tempchar[1] = UART_Data_Recived[25];
+            tempchar[2] = UART_Data_Recived[26];
+            tempchar[3] = UART_Data_Recived[27];
+            tempchar[4] = UART_Data_Recived[28];
 
+            try {
+                float temp =  atof(tempchar) - 500;
+                PosZ_v.erase(PosZ_v.begin());
+                PosZ_v.push_back((double)temp);
+            } catch (const std::runtime_error& e) {
+
+            }
+
+            // Zapisanie obecnego sterowania 03
+            tempchar[0] = UART_Data_Recived[30];
+            tempchar[1] = UART_Data_Recived[31];
+            tempchar[2] = UART_Data_Recived[32];
+            tempchar[3] = UART_Data_Recived[33];
+            tempchar[4] = UART_Data_Recived[34];
+
+            try {
+                float temp =  atof(tempchar) - 500;
+                RotZ_v.erase(RotZ_v.begin());
+                RotZ_v.push_back((double)temp);
+            } catch (const std::runtime_error& e) {
+
+            }
+
+            // Zapisanie zadanego sterowania 01
+            tempchar[0] = UART_Data_Recived[36];
+            tempchar[1] = UART_Data_Recived[37];
+            tempchar[2] = UART_Data_Recived[38];
+            tempchar[3] = UART_Data_Recived[39];
+            tempchar[4] = UART_Data_Recived[40];
+
+            try {
+                float temp =  atof(tempchar) - 500;
+                SetPosX_v.erase(SetPosX_v.begin());
+                SetPosX_v.push_back((double)temp);
+            } catch (const std::runtime_error& e) {
+
+            }
+
+            // Zapisanie zadanego sterowania 02
+            tempchar[0] = UART_Data_Recived[42];
+            tempchar[1] = UART_Data_Recived[43];
+            tempchar[2] = UART_Data_Recived[44];
+            tempchar[3] = UART_Data_Recived[45];
+            tempchar[4] = UART_Data_Recived[46];
+
+            try {
+                float temp =  atof(tempchar) - 500;
+                SetPosY_v.erase(SetPosY_v.begin());
+                SetPosY_v.push_back((double)temp);
+            } catch (const std::runtime_error& e) {
+
+            }
+
+            // Zapisanie zadanego sterowania 03
+            tempchar[0] = UART_Data_Recived[48];
+            tempchar[1] = UART_Data_Recived[49];
+            tempchar[2] = UART_Data_Recived[50];
+            tempchar[3] = UART_Data_Recived[51];
+            tempchar[4] = UART_Data_Recived[52];
+
+            try {
+                float temp =  atof(tempchar) - 500;
+                SetPosZ_v.erase(SetPosZ_v.begin());
+                SetPosZ_v.push_back((double)temp);
+            } catch (const std::runtime_error& e) {
+
+            }
+
+        // <<<<<<<<<< Zapisanie danych do historii
             plot_refresh ++;
 
             //Wyczyszczenie otrzymanej tablicy
@@ -502,17 +661,34 @@ int main()
             std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
             auto diff = end - begin;
             cout <<"Fps: " <<1000 * UART_Iteration / chrono::duration_cast<std::chrono::milliseconds>(diff).count() << endl;
-            cout <<"Fps:"<<RotMainAxis<< endl;
-            //Wyrysowanie wukresow
-            if(plot_refresh>50) {
-                plot1.update(t,PosX_v);
-                plot2.update(t,PosY_v);
+            //Wyrysowanie wykresow
+            if(plot_refresh>350) {
+                if(mode == 0) {
+                    plot10.update(t,PosX_v);
+                    plot20.update(t,PosY_v);
 
-                plot3.update(t,RotY_v);
-                plot4.update(t,RotX_v);
+                    plot11.update(t,RotX_v);
+                    plot21.update(t,RotY_v);
+
+                    plot12.update(t,SetPosX_v);
+                    plot22.update(t,SetPosY_v);
+                } else if (mode == 1) {
+                    plot10.update(t,PosX_v);
+                    plot20.update(t,PosY_v);
+                    plot30.update(t,PosZ_v);
+
+                    plot11.update(t,RotX_v);
+                    plot21.update(t,RotY_v);
+                    plot31.update(t,RotZ_v);
+
+                    plot12.update(t,SetPosX_v);
+                    plot22.update(t,SetPosY_v);
+                    plot32.update(t,SetPosZ_v);
+                }
+
 
                 plot_refresh = 0;
-                plt::pause(0.001);
+                plt::pause(0.000001);
             }
 
 
