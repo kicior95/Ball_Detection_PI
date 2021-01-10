@@ -1,5 +1,9 @@
 #include <iostream>
+#include<fstream>
+
 #include <chrono>
+#include <time.h>
+
 #include <stdio.h>
 #include <cstdio>
 #include <memory>
@@ -44,6 +48,13 @@ enum APROX_MODE {
     ARC
 };
 
+enum CHART_MODE {
+    ON,
+    OFF,
+    SAVE
+};
+
+
 
 
 
@@ -56,69 +67,28 @@ static Vector2D Joint_03;
 static Vector2D Ball;
 static Vector2D BallPosImage;
 
-float Pos_X_Set = 50;
-float Pos_Y_Set = 50;
-int mode = 1;
+float Pos_X_Set = 0;
+float Pos_Y_Set = 0;
+int mode = 0;
+
+static CHART_MODE tryb_wyswietlania = OFF;
 
 int MaxAreaContourId(vector <vector<cv::Point>> contours);
 string RunCMD(const char* cmd);
-
 Vector2D CircleCenter(Vector2D Point01, Vector2D Point02, Vector2D Point03);
-
-Vector2D SubtractVector(Vector2D Wektor_01, Vector2D Wektor_02) {
-    Vector2D results;
-    results.x = Wektor_01.x - Wektor_02.x;
-    results.y = Wektor_01.y - Wektor_02.y;
-    return results;
-}
-
-Vector2D ReversVector(Vector2D Wektor_01) {
-    Vector2D results;
-    results.x = - Wektor_01.x;
-    results.y = - Wektor_01.y;
-    return results;
-}
-
-Vector2D ScalarVectorMultiplication(Vector2D Wektor, float Skalar) {
-    Vector2D results;
-    results.x = Skalar * Wektor.x;
-    results.y = Skalar * Wektor.y;
-    return results;
-}
-
-float VectorScalar(Vector2D Wektor_01, Vector2D  Wektor_02) {
-    float results = Wektor_01.x * Wektor_02.x + Wektor_01.y * Wektor_02.y;
-    return results;
-}
-
-float VectorNorm(Vector2D Wektor) {
-    float VectorNorm = sqrt(pow(Wektor.x, 2) + pow(Wektor.y, 2));
-    return VectorNorm;
-}
-
-float AngleBetweenVector(Vector2D Wektor_01, Vector2D  Wektor_02) {
-    float results = acos(VectorScalar(Wektor_01, Wektor_02)/(VectorNorm(Wektor_01) * VectorNorm(Wektor_02)));
-    return results;
-}
-
-Vector2D FlipedVector(Vector2D Wektor_01) {
-    Vector2D results;
-    results.x = Wektor_01.x;
-    results.y = -Wektor_01.y;
-    return results;
-}
-
-
-Vector2D CalcPos(Vector2D Ball_Pos_Image, Vector2D  CircleCenter, float AngleOfMainVector) {
-    Vector2D temp = SubtractVector(FlipedVector(Ball_Pos_Image), CircleCenter);
-    Vector2D results;
-    results.x = cos(AngleOfMainVector) * temp.x + sin(AngleOfMainVector) * temp.y;
-    results.y = -sin(AngleOfMainVector) * temp.x + cos(AngleOfMainVector) * temp.y;
-    return results;
-}
+Vector2D SubtractVector(Vector2D Wektor_01, Vector2D Wektor_02);
+Vector2D ReversVector(Vector2D Wektor_01);
+Vector2D ScalarVectorMultiplication(Vector2D Wektor, float Skalar);
+float VectorScalar(Vector2D Wektor_01, Vector2D  Wektor_02);
+float VectorNorm(Vector2D Wektor);
+float AngleBetweenVector(Vector2D Wektor_01, Vector2D  Wektor_02);
+Vector2D FlipedVector(Vector2D Wektor_01);
+Vector2D CalcPos(Vector2D Ball_Pos_Image, Vector2D  CircleCenter, float AngleOfMainVector);
 
 int main()
 {
+    //Archiwizacja danych w pliku tekstowym
+
 
     // >>>>>>>>>> Inicjalizacja stałych
 
@@ -151,9 +121,6 @@ int main()
     float RotMainAxis = AngleBetweenVector(ImageAxisX, MainAxis);
     // <<<<<<<<<< Inicjalizacja stałych
 
-
-
-    // >>>>>>>>>> Przygotowanie wykresow
     std::vector<double>  PosX_v(400,0);
     std::vector<double>  SetPosX_v(400, Pos_Y_Set);
     std::vector<double>  RotX_v(400,0);
@@ -166,13 +133,19 @@ int main()
     std::vector<double>  SetPosZ_v(400, Pos_Y_Set);
     std::vector<double>  RotZ_v(400,0);
 
-    std::vector<double> t(400);
-    for(int i=0;i<t.size();i++) {
-        t[i] = i;
-    }
+
+/*
+
+    // >>>>>>>>>> Przygotowanie wykresow
 
 
+        std::vector<double> t(400);
 
+        if(tryb_wyswietlania == ON) {
+            for(int i=0;i<t.size();i++) {
+                t[i] = i;
+            }
+        }
 
 
         //Wykres 01
@@ -248,23 +221,24 @@ int main()
         }
 
 
-     int plot_refresh = 0;
-    // <<<<<<<<<< Przygotowanie wykresow
+     //int plot_refresh = 0;
 
+    // <<<<<<<<<< Przygotowanie wykresow
+*/
 
 
 
 
     // >>>>>>>>>> Komunikacja UART z STM32
     int UART_Iteration = 0;
-    char UART_Data_Recived[54];
-    UART_Data_Recived[54] = '\0';
+    char UART_Data_Recived[53];
+    UART_Data_Recived[53] = '\0';
     char UART_Data_Transmited[15] = "1000 1001 1002";
 
 
     //Otwarcie portu komunikacyjnego
     int fd;
-    if ((fd = serialOpen ("/dev/ttyUSB0", 115200)) < 0) {
+    if ((fd = serialOpen ("/dev/ttyUSB0", 19200)) < 0) {
         fprintf (stderr, "Błąd otwarcia urządzenia: %s\n", strerror (errno)) ;
         //return 1 ;
     }
@@ -313,9 +287,9 @@ int main()
     // >>>>>>>>>> Cykl pracy urządzenia
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
+
     while(1) {
         // >>>>>>>>>> Przechwytywanie obrazu
-
 
 
         while(cap.isOpened()) {
@@ -398,7 +372,6 @@ int main()
                         center.x = DetectBallsBox[static_cast<uint>(Contour_Id)].x + DetectBallsBox[static_cast<uint>(Contour_Id)].width / 2;
                         center.y = DetectBallsBox[static_cast<uint>(Contour_Id)].y + DetectBallsBox[static_cast<uint>(Contour_Id)].height / 2;
 
-                        cout<<center.x <<"   "<<center.y<<endl;
                         //Wyznaczenie polozenia srodka obiektu
                         BallPosImage.x = center.x;
                         BallPosImage.y = center.y;
@@ -472,7 +445,7 @@ int main()
                 // Wypisanie wyniku na ekranie
                 stringstream sstr;
                 sstr << "(" << static_cast<int>(Pos_X) << "," << static_cast<int>(Pos_Y) << ")";
-                cout<<sstr.str()<<endl;
+
                 putText(src_rot, sstr.str(),
                         Point(static_cast<int>(center.x + 3), static_cast<int>(center.y - 3)),
                         FONT_HERSHEY_SIMPLEX, 0.5, Kolor_01, 2);
@@ -486,7 +459,7 @@ int main()
             sprintf(UART_Data_Transmited,"%04d %04d %04d %04d",static_cast<int>(Pos_X+1000), static_cast<int>(Pos_Y+1000),
                     static_cast<int>(Pos_X_Set+1000), static_cast<int>(Pos_Y_Set+1000));
             serialPrintf(fd,UART_Data_Transmited); // Wysyłanie wiadomości
-            cout<<UART_Data_Transmited<<endl;
+
             // <<<<<<<<<< Wysłanie danych do STM32
 
             // >>>>>>>>>> Odbiór danych danych do STM32
@@ -499,10 +472,8 @@ int main()
 
 
             // >>>>>>>>>> Zapisanie danych do historii
-            //PosX_v.erase(PosX_v.begin());
-           // PosY_v.erase(PosY_v.begin());
-            //PosX_v.push_back((double)Pos_X);
-            //PosY_v.push_back((double)Pos_Y);
+
+
 
             char tempchar[6] = "00.00";
 
@@ -514,9 +485,11 @@ int main()
             tempchar[4] = UART_Data_Recived[4];
 
             try {
-                float temp =  atof(tempchar) - 500;
-                PosX_v.erase(PosX_v.begin());
-                PosX_v.push_back((double)temp);
+                float temp =  atof(tempchar) - 500;          
+
+                    PosX_v.erase(PosX_v.begin());
+                    PosX_v.push_back((double)temp);
+
             } catch (const std::runtime_error& e) {
 
             }
@@ -529,8 +502,9 @@ int main()
 
             try {
                 float temp =  atof(tempchar) - 500;
-                RotX_v.erase(RotX_v.begin());
-                RotX_v.push_back((double)temp);
+                    RotX_v.erase(RotX_v.begin());
+                    RotX_v.push_back((double)temp);
+
             } catch (const std::runtime_error& e) {
 
             }
@@ -544,14 +518,15 @@ int main()
 
             try {
                 float temp =  atof(tempchar) - 500;
-                PosY_v.erase(PosY_v.begin());
-                PosY_v.push_back((double)temp);
-            } catch (const std::runtime_error& e) {
+                    PosY_v.erase(PosY_v.begin());
+                   PosY_v.push_back((double)temp);
 
+            } catch (const std::runtime_error& e) {
+waitKey();
             }
 
             // Zapisanie obecnego sterowania 02
-            tempchar[0] = UART_Data_Recived[18];
+                tempchar[0] = UART_Data_Recived[18];
             tempchar[1] = UART_Data_Recived[19];
             tempchar[2] = UART_Data_Recived[20];
             tempchar[3] = UART_Data_Recived[21];
@@ -559,10 +534,9 @@ int main()
 
             try {
                 float temp =  atof(tempchar) - 500;
-                RotY_v.erase(RotY_v.begin());
-                RotY_v.push_back((double)temp);
+                    RotY_v.erase(RotY_v.begin());
+                    RotY_v.push_back((double)temp) ;
             } catch (const std::runtime_error& e) {
-
             }
 
             // Zapisanie obecnej pozycji 03
@@ -574,10 +548,9 @@ int main()
 
             try {
                 float temp =  atof(tempchar) - 500;
-                PosZ_v.erase(PosZ_v.begin());
-                PosZ_v.push_back((double)temp);
+                  PosZ_v.erase(PosZ_v.begin());
+                  PosZ_v.push_back((double)temp);
             } catch (const std::runtime_error& e) {
-
             }
 
             // Zapisanie obecnego sterowania 03
@@ -589,10 +562,9 @@ int main()
 
             try {
                 float temp =  atof(tempchar) - 500;
-                RotZ_v.erase(RotZ_v.begin());
-                RotZ_v.push_back((double)temp);
+                   RotZ_v.erase(RotZ_v.begin());
+                   RotZ_v.push_back((double)temp);
             } catch (const std::runtime_error& e) {
-
             }
 
             // Zapisanie zadanego sterowania 01
@@ -604,8 +576,9 @@ int main()
 
             try {
                 float temp =  atof(tempchar) - 500;
-                SetPosX_v.erase(SetPosX_v.begin());
-                SetPosX_v.push_back((double)temp);
+                    SetPosX_v.erase(SetPosX_v.begin());
+                   SetPosX_v.push_back((double)temp);
+
             } catch (const std::runtime_error& e) {
 
             }
@@ -619,10 +592,12 @@ int main()
 
             try {
                 float temp =  atof(tempchar) - 500;
-                SetPosY_v.erase(SetPosY_v.begin());
-                SetPosY_v.push_back((double)temp);
-            } catch (const std::runtime_error& e) {
 
+                    SetPosY_v.erase(SetPosY_v.begin());
+                    SetPosY_v.push_back((double)temp);
+
+
+            } catch (const std::runtime_error& e) {
             }
 
             // Zapisanie zadanego sterowania 03
@@ -634,14 +609,16 @@ int main()
 
             try {
                 float temp =  atof(tempchar) - 500;
-                SetPosZ_v.erase(SetPosZ_v.begin());
-                SetPosZ_v.push_back((double)temp);
+                    SetPosZ_v.erase(SetPosZ_v.begin());
+                   SetPosZ_v.push_back((double)temp);
             } catch (const std::runtime_error& e) {
-
             }
 
+
+                // plot_refresh ++;
+
         // <<<<<<<<<< Zapisanie danych do historii
-            plot_refresh ++;
+
 
             //Wyczyszczenie otrzymanej tablicy
             itr = 0;
@@ -654,59 +631,84 @@ int main()
 
 
 
+
             // >>>>>>>>>> GUI: Oczekiwanie na akcje uzytkownika
 
             //Wyznaczenie predkosci akwiztcji danych
             UART_Iteration++;
             std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
             auto diff = end - begin;
-            cout <<"Fps: " <<1000 * UART_Iteration / chrono::duration_cast<std::chrono::milliseconds>(diff).count() << endl;
+            begin = std::chrono::steady_clock::now();
+            //cout <<"ITER: " << chrono::duration_cast<std::chrono::milliseconds>(diff).count() << endl;
+/*
             //Wyrysowanie wykresow
-            if(plot_refresh>350) {
-                if(mode == 0) {
-                    plot10.update(t,PosX_v);
-                    plot20.update(t,PosY_v);
+            //if(tryb_wyswietlania == ON){
+                if(plot_refresh>350) {
+                    if(mode == 0) {
+                       /* plot10.update(t,PosX_v);
+                        plot20.update(t,PosY_v);
 
-                    plot11.update(t,RotX_v);
-                    plot21.update(t,RotY_v);
+                        plot11.update(t,RotX_v);
+                        plot21.update(t,RotY_v);
 
-                    plot12.update(t,SetPosX_v);
-                    plot22.update(t,SetPosY_v);
-                } else if (mode == 1) {
-                    plot10.update(t,PosX_v);
-                    plot20.update(t,PosY_v);
-                    plot30.update(t,PosZ_v);
+                        plot12.update(t,SetPosX_v);
+                        plot22.update(t,SetPosY_v);
 
-                    plot11.update(t,RotX_v);
-                    plot21.update(t,RotY_v);
-                    plot31.update(t,RotZ_v);
+                    } else if (mode == 1) {
 
-                    plot12.update(t,SetPosX_v);
-                    plot22.update(t,SetPosY_v);
-                    plot32.update(t,SetPosZ_v);
+                        plot10.update(t,PosX_v);
+                        plot20.update(t,PosY_v);
+                        plot30.update(t,PosZ_v);
+
+                        plot11.update(t,RotX_v);
+                        plot21.update(t,RotY_v);
+                        plot31.update(t,RotZ_v);
+
+                        plot12.update(t,SetPosX_v);
+                        plot22.update(t,SetPosY_v);
+                        plot32.update(t,SetPosZ_v);
+
+                    }
+
+
+                   // plot_refresh = 0;
+                   // plt::pause(0.00001);
+
                 }
+           // } else if (tryb_wyswietlania == SAVE) {
 
+           // }
 
-                plot_refresh = 0;
-                plt::pause(0.000001);
-            }
+*/
 
 
             //Wyswietlenie obrazu
             imshow(Okno_01,src_rot);
             // >>>>>>>>>> DIAGNOSTYKA
-            //imshow("Hue",hsv_channels[0]);
-            //imshow("Saturation",hsv_channels[2]);
-            //imshow("Value",hsv_channels[2]);
 
-            // imshow("Threshold",hsv_binnary);
-            //imshow("Erode",binnary_erode);
-            //imshow("Dilate",binnary_dilate);
             // <<<<<<<<<< DIAGNOSTYKA
 
             // Wcisniecie przyciku zarzymuje cykl
-            if (waitKey(5) >= 0)
+            if (waitKey(5) >= 0) {
+
+                ofstream zapis;
+
+
+                time_t czas;
+                time(&czas);
+                struct tm *ptr;
+                ptr = localtime(&czas);
+                char TEXTFILE_NAME[] = "/home/pi/Desktop/Data/2020_12_31_12_59.txt";
+                sprintf(TEXTFILE_NAME,"/home/pi/Desktop/Data/%04d_%02d_%02d_%02d_%02d_%02d.txt",
+                        ptr->tm_year+1900, ptr->tm_mon+1, ptr->tm_mday, ptr->tm_hour, ptr->tm_min, ptr->tm_sec);
+
+                zapis.open(TEXTFILE_NAME,ios::out | ios::app);
+                for( int i = 0; i < PosX_v.size(); i++ )
+                     zapis<<PosX_v[i]<<";"<<PosY_v[i]<<SetPosX_v[i]<<";"<<SetPosY_v[i]<<";"<<RotX_v[i]<<";"<<RotY_v[i]<<";"<<endl;
+
+                 zapis.close();
                 return 0;
+            }
         }
         // >>>>>>>>>> GUI: Oczekiwanie na akcje uzytkownika
 
@@ -750,4 +752,55 @@ Vector2D CircleCenter(Vector2D Point01, Vector2D Point02, Vector2D Point03) {
     Center.x = static_cast<float>(0.5f * ((Point02.x * Point02.x * Point03.y + Point02.y * Point02.y * Point03.y - Point01.x * Point01.x * Point03.y + Point01.x * Point01.x * Point02.y - Point01.y * Point01.y * Point03.y + Point01.y * Point01.y * Point02.y + Point01.y * Point03.x * Point03.x + Point01.y * Point03.y * Point03.y - Point01.y * Point02.x * Point02.x - Point01.y * Point02.y * Point02.y - Point02.y * Point03.x * Point03.x - Point02.y * Point03.y * Point03.y) / (Point01.y * Point03.x - Point01.y * Point02.x - Point02.y * Point03.x - Point03.y * Point01.x + Point03.y * Point02.x + Point02.y * Point01.x)));
     Center.y = static_cast<float>(0.5f * ((-Point01.x * Point03.x * Point03.x - Point01.x * Point03.y * Point03.y + Point01.x * Point02.x * Point02.x + Point01.x * Point02.y * Point02.y + Point02.x * Point03.x * Point03.x + Point02.x * Point03.y * Point03.y - Point02.x * Point02.x * Point03.x - Point02.y * Point02.y * Point03.x + Point01.x * Point01.x * Point03.x - Point01.x * Point01.x * Point02.x + Point01.y * Point01.y * Point03.x - Point01.y * Point01.y * Point02.x) / (Point01.y * Point03.x - Point01.y * Point02.x - Point02.y * Point03.x - Point03.y * Point01.x + Point03.y * Point02.x + Point02.y * Point01.x)));
     return Center;
+}
+Vector2D SubtractVector(Vector2D Wektor_01, Vector2D Wektor_02) {
+    Vector2D results;
+    results.x = Wektor_01.x - Wektor_02.x;
+    results.y = Wektor_01.y - Wektor_02.y;
+    return results;
+}
+
+Vector2D ReversVector(Vector2D Wektor_01) {
+    Vector2D results;
+    results.x = - Wektor_01.x;
+    results.y = - Wektor_01.y;
+    return results;
+}
+
+Vector2D ScalarVectorMultiplication(Vector2D Wektor, float Skalar) {
+    Vector2D results;
+    results.x = Skalar * Wektor.x;
+    results.y = Skalar * Wektor.y;
+    return results;
+}
+
+float VectorScalar(Vector2D Wektor_01, Vector2D  Wektor_02) {
+    float results = Wektor_01.x * Wektor_02.x + Wektor_01.y * Wektor_02.y;
+    return results;
+}
+
+float VectorNorm(Vector2D Wektor) {
+    float VectorNorm = sqrt(pow(Wektor.x, 2) + pow(Wektor.y, 2));
+    return VectorNorm;
+}
+
+float AngleBetweenVector(Vector2D Wektor_01, Vector2D  Wektor_02) {
+    float results = acos(VectorScalar(Wektor_01, Wektor_02)/(VectorNorm(Wektor_01) * VectorNorm(Wektor_02)));
+    return results;
+}
+
+Vector2D FlipedVector(Vector2D Wektor_01) {
+    Vector2D results;
+    results.x = Wektor_01.x;
+    results.y = -Wektor_01.y;
+    return results;
+}
+
+
+Vector2D CalcPos(Vector2D Ball_Pos_Image, Vector2D  CircleCenter, float AngleOfMainVector) {
+    Vector2D temp = SubtractVector(FlipedVector(Ball_Pos_Image), CircleCenter);
+    Vector2D results;
+    results.x = cos(AngleOfMainVector) * temp.x + sin(AngleOfMainVector) * temp.y;
+    results.y = -sin(AngleOfMainVector) * temp.x + cos(AngleOfMainVector) * temp.y;
+    return results;
 }
