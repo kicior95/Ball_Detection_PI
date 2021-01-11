@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <cstdio>
+
 #include <memory>
 #include <string>
 #include <array>
@@ -31,8 +32,6 @@
 
 using namespace std;
 using namespace cv;
-
-
 namespace plt = matplotlibcpp;
 
 
@@ -40,7 +39,6 @@ struct Vector2D {
     float x;
     float y;
 };
-
 
 
 enum APROX_MODE {
@@ -53,10 +51,6 @@ enum CHART_MODE {
     OFF,
     SAVE
 };
-
-
-
-
 
 static APROX_MODE Mode = RECTANGLE;
 static Vector2D ImageAxisX;
@@ -73,6 +67,11 @@ int mode = 0;
 
 static CHART_MODE tryb_wyswietlania = OFF;
 
+
+
+int komenda = 0;
+
+
 int MaxAreaContourId(vector <vector<cv::Point>> contours);
 string RunCMD(const char* cmd);
 Vector2D CircleCenter(Vector2D Point01, Vector2D Point02, Vector2D Point03);
@@ -85,10 +84,7 @@ float AngleBetweenVector(Vector2D Wektor_01, Vector2D  Wektor_02);
 Vector2D FlipedVector(Vector2D Wektor_01);
 Vector2D CalcPos(Vector2D Ball_Pos_Image, Vector2D  CircleCenter, float AngleOfMainVector);
 
-int main()
-{
-    //Archiwizacja danych w pliku tekstowym
-
+int main() {
 
     // >>>>>>>>>> Inicjalizacja stałych
 
@@ -233,7 +229,8 @@ int main()
     int UART_Iteration = 0;
     char UART_Data_Recived[53];
     UART_Data_Recived[53] = '\0';
-    char UART_Data_Transmited[15] = "1000 1001 1002";
+    char UART_Data_Transmited[20] = "1000 1001 1002 1003";
+
 
 
     //Otwarcie portu komunikacyjnego
@@ -458,6 +455,13 @@ int main()
 
             sprintf(UART_Data_Transmited,"%04d %04d %04d %04d",static_cast<int>(Pos_X+1000), static_cast<int>(Pos_Y+1000),
                     static_cast<int>(Pos_X_Set+1000), static_cast<int>(Pos_Y_Set+1000));
+            if(komenda == 1) {
+                strcpy(UART_Data_Transmited, "9999 0001 0000 0000");
+                komenda = 0;
+            }
+            if(komenda == 2) {
+                strcpy(UART_Data_Transmited, "9999 0001 0010 0010");
+            }
             serialPrintf(fd,UART_Data_Transmited); // Wysyłanie wiadomości
 
             // <<<<<<<<<< Wysłanie danych do STM32
@@ -491,7 +495,7 @@ int main()
                     PosX_v.push_back((double)temp);
 
             } catch (const std::runtime_error& e) {
-
+        cout<<"Blad odczytu danych z Platformy (Pos_X)"<<endl;
             }
              // Zapisanie obecnego sterowania 01
             tempchar[0] = UART_Data_Recived[6];
@@ -506,7 +510,7 @@ int main()
                     RotX_v.push_back((double)temp);
 
             } catch (const std::runtime_error& e) {
-
+            cout<<"Blad odczytu danych z Platformy(Rot_X)"<<endl;
             }
 
             // Zapisanie obecnej pozycji 02
@@ -522,7 +526,7 @@ int main()
                    PosY_v.push_back((double)temp);
 
             } catch (const std::runtime_error& e) {
-waitKey();
+cout<<"Blad odczytu danych z Platformy(Pos_Y)"<<endl;
             }
 
             // Zapisanie obecnego sterowania 02
@@ -537,6 +541,7 @@ waitKey();
                     RotY_v.erase(RotY_v.begin());
                     RotY_v.push_back((double)temp) ;
             } catch (const std::runtime_error& e) {
+                cout<<"Blad odczytu danych z Platformy(Rot_Y)"<<endl;
             }
 
             // Zapisanie obecnej pozycji 03
@@ -565,7 +570,9 @@ waitKey();
                    RotZ_v.erase(RotZ_v.begin());
                    RotZ_v.push_back((double)temp);
             } catch (const std::runtime_error& e) {
+                cout<<"Blad odczytu danych z Platformy(Rot_Z)"<<endl;
             }
+
 
             // Zapisanie zadanego sterowania 01
             tempchar[0] = UART_Data_Recived[36];
@@ -580,7 +587,7 @@ waitKey();
                    SetPosX_v.push_back((double)temp);
 
             } catch (const std::runtime_error& e) {
-
+cout<<"Blad odczytu danych z Platformy(Set_PosX)"<<endl;
             }
 
             // Zapisanie zadanego sterowania 02
@@ -598,6 +605,7 @@ waitKey();
 
 
             } catch (const std::runtime_error& e) {
+                cout<<"Blad odczytu danych z Platformy(Set_PosY)"<<endl;
             }
 
             // Zapisanie zadanego sterowania 03
@@ -609,9 +617,10 @@ waitKey();
 
             try {
                 float temp =  atof(tempchar) - 500;
-                    SetPosZ_v.erase(SetPosZ_v.begin());
+                   SetPosZ_v.erase(SetPosZ_v.begin());
                    SetPosZ_v.push_back((double)temp);
             } catch (const std::runtime_error& e) {
+                cout<<"Blad odczytu danych z Platformy(Set_PosZ)"<<endl;
             }
 
 
@@ -689,11 +698,13 @@ waitKey();
             // <<<<<<<<<< DIAGNOSTYKA
 
             // Wcisniecie przyciku zarzymuje cykl
-            if (waitKey(5) >= 0) {
-
+int numer_przycisku = waitKey(1);
+cout<<numer_przycisku<<endl;
+            if (numer_przycisku == 27) {
+                //Archiwizacja danych w pliku tekstowym
                 ofstream zapis;
 
-
+                //Deklaracja nazwy pliku
                 time_t czas;
                 time(&czas);
                 struct tm *ptr;
@@ -702,12 +713,24 @@ waitKey();
                 sprintf(TEXTFILE_NAME,"/home/pi/Desktop/Data/%04d_%02d_%02d_%02d_%02d_%02d.txt",
                         ptr->tm_year+1900, ptr->tm_mon+1, ptr->tm_mday, ptr->tm_hour, ptr->tm_min, ptr->tm_sec);
 
+                 //Otwarcie pliku tekstowego
                 zapis.open(TEXTFILE_NAME,ios::out | ios::app);
-                for( int i = 0; i < PosX_v.size(); i++ )
-                     zapis<<PosX_v[i]<<";"<<PosY_v[i]<<SetPosX_v[i]<<";"<<SetPosY_v[i]<<";"<<RotX_v[i]<<";"<<RotY_v[i]<<";"<<endl;
 
+                //Zapisanie zmiennych
+                for( int i = 0; i < PosX_v.size(); i++ )
+                     zapis<<PosX_v[i]<<";"<<PosY_v[i]<<";"<<SetPosX_v[i]<<";"<<SetPosY_v[i]<<";"<<RotX_v[i]<<";"<<RotY_v[i]<<";"<<endl;
+                //Zamkniecie pliku
                  zapis.close();
                 return 0;
+            }
+
+            if (numer_przycisku == 97 ) {
+                komenda = 1;
+                cout<<"DONE"<<endl;
+            }
+            if (numer_przycisku == 115) {
+                komenda = 2;
+                cout<<"DONE"<<endl;
             }
         }
         // >>>>>>>>>> GUI: Oczekiwanie na akcje uzytkownika
