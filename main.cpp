@@ -65,11 +65,7 @@ float Pos_X_Set = 0;
 float Pos_Y_Set = 0;
 int mode = 0;
 
-static CHART_MODE tryb_wyswietlania = OFF;
 
-
-
-int komenda = 0;
 
 
 int MaxAreaContourId(vector <vector<cv::Point>> contours);
@@ -128,101 +124,6 @@ int main() {
     std::vector<double>  PosZ_v(400,0);
     std::vector<double>  SetPosZ_v(400, Pos_Y_Set);
     std::vector<double>  RotZ_v(400,0);
-
-
-/*
-
-    // >>>>>>>>>> Przygotowanie wykresow
-
-
-        std::vector<double> t(400);
-
-        if(tryb_wyswietlania == ON) {
-            for(int i=0;i<t.size();i++) {
-                t[i] = i;
-            }
-        }
-
-
-        //Wykres 01
-        plt::figure_size(480, 320);
-        plt::title("Pozycja X");
-
-        plt:: subplot(2,1,1);
-        plt:: Plot plot10("Pos01", t, PosX_v);
-        plt:: Plot plot12("Set01", t, SetPosX_v);
-        plt::grid(1);
-        plt::legend();
-        if(mode == 1) {
-             plt::ylim(-250, 250);
-        } else if (mode == 0) {
-             plt::ylim(-250, 250);
-        }
-
-
-
-        plt:: subplot(2,1,2);
-        plt:: Plot plot11("Rot01", t, RotY_v);
-        plt::grid(1);
-        plt::legend();
-
-        if(mode == 1) {
-             plt::ylim(-35, 35);
-        } else if (mode == 0) {
-             plt::ylim(-12, 12);
-        }
-
-        //Wykres 02
-        plt::figure_size(480, 320);
-        plt::title("Pozycja Y");
-
-        plt:: subplot(2,1,1);
-        plt:: Plot plot20("Pos02", t, PosY_v);
-        plt:: Plot plot22("Set02", t, SetPosY_v);
-        plt::grid(1);
-        plt::legend();
-        plt::ylim(-250, 250);
-
-
-        plt:: subplot(2,1,2);
-        plt:: Plot plot21("Rot02", t, RotX_v);
-        plt::grid(1);
-        plt::legend();
-        if(mode == 1) {
-             plt::ylim(-35, 35);
-        } else if (mode == 0) {
-             plt::ylim(-12, 12);
-        }
-
-        //Wykres 03
-        plt::figure_size(480, 320);
-        plt::title("Pozycja 03");
-
-        plt:: subplot(2,1,1);
-        plt:: Plot plot30("Pos03", t, PosZ_v);
-        plt:: Plot plot32("Set03", t, SetPosZ_v);
-        plt::grid(1);
-        plt::legend();
-        plt::ylim(-250, 250);
-
-
-        plt:: subplot(2,1,2);
-        plt:: Plot plot31("Rot03", t, RotZ_v);
-        plt::grid(1);
-        plt::legend();
-        if(mode == 1) {
-             plt::ylim(-35, 35);
-        } else if (mode == 0) {
-             plt::ylim(-12, 12);
-        }
-
-
-     //int plot_refresh = 0;
-
-    // <<<<<<<<<< Przygotowanie wykresow
-*/
-
-
 
 
     // >>>>>>>>>> Komunikacja UART z STM32
@@ -455,13 +356,7 @@ int main() {
 
             sprintf(UART_Data_Transmited,"%04d %04d %04d %04d",static_cast<int>(Pos_X+1000), static_cast<int>(Pos_Y+1000),
                     static_cast<int>(Pos_X_Set+1000), static_cast<int>(Pos_Y_Set+1000));
-            if(komenda == 1) {
-                strcpy(UART_Data_Transmited, "9999 0001 0000 0000");
-                komenda = 0;
-            }
-            if(komenda == 2) {
-                strcpy(UART_Data_Transmited, "9999 0001 0010 0010");
-            }
+
             serialPrintf(fd,UART_Data_Transmited); // Wysyłanie wiadomości
 
             // <<<<<<<<<< Wysłanie danych do STM32
@@ -473,161 +368,6 @@ int main() {
                 itr++;
             }
             cout<<UART_Data_Recived<<endl;
-
-
-            // >>>>>>>>>> Zapisanie danych do historii
-
-
-
-            char tempchar[6] = "00.00";
-
-            // Zapisanie obecnej pozycji 01
-            tempchar[0] = UART_Data_Recived[0];
-            tempchar[1] = UART_Data_Recived[1];
-            tempchar[2] = UART_Data_Recived[2];
-            tempchar[3] = UART_Data_Recived[3];
-            tempchar[4] = UART_Data_Recived[4];
-
-            try {
-                float temp =  atof(tempchar) - 500;          
-
-                    PosX_v.erase(PosX_v.begin());
-                    PosX_v.push_back((double)temp);
-
-            } catch (const std::runtime_error& e) {
-        cout<<"Blad odczytu danych z Platformy (Pos_X)"<<endl;
-            }
-             // Zapisanie obecnego sterowania 01
-            tempchar[0] = UART_Data_Recived[6];
-            tempchar[1] = UART_Data_Recived[7];
-            tempchar[2] = UART_Data_Recived[8];
-            tempchar[3] = UART_Data_Recived[9];
-            tempchar[4] = UART_Data_Recived[10];
-
-            try {
-                float temp =  atof(tempchar) - 500;
-                    RotX_v.erase(RotX_v.begin());
-                    RotX_v.push_back((double)temp);
-
-            } catch (const std::runtime_error& e) {
-            cout<<"Blad odczytu danych z Platformy(Rot_X)"<<endl;
-            }
-
-            // Zapisanie obecnej pozycji 02
-            tempchar[0] = UART_Data_Recived[12];
-            tempchar[1] = UART_Data_Recived[13];
-            tempchar[2] = UART_Data_Recived[14];
-            tempchar[3] = UART_Data_Recived[15];
-            tempchar[4] = UART_Data_Recived[16];
-
-            try {
-                float temp =  atof(tempchar) - 500;
-                    PosY_v.erase(PosY_v.begin());
-                   PosY_v.push_back((double)temp);
-
-            } catch (const std::runtime_error& e) {
-cout<<"Blad odczytu danych z Platformy(Pos_Y)"<<endl;
-            }
-
-            // Zapisanie obecnego sterowania 02
-                tempchar[0] = UART_Data_Recived[18];
-            tempchar[1] = UART_Data_Recived[19];
-            tempchar[2] = UART_Data_Recived[20];
-            tempchar[3] = UART_Data_Recived[21];
-            tempchar[4] = UART_Data_Recived[22];
-
-            try {
-                float temp =  atof(tempchar) - 500;
-                    RotY_v.erase(RotY_v.begin());
-                    RotY_v.push_back((double)temp) ;
-            } catch (const std::runtime_error& e) {
-                cout<<"Blad odczytu danych z Platformy(Rot_Y)"<<endl;
-            }
-
-            // Zapisanie obecnej pozycji 03
-            tempchar[0] = UART_Data_Recived[24];
-            tempchar[1] = UART_Data_Recived[25];
-            tempchar[2] = UART_Data_Recived[26];
-            tempchar[3] = UART_Data_Recived[27];
-            tempchar[4] = UART_Data_Recived[28];
-
-            try {
-                float temp =  atof(tempchar) - 500;
-                  PosZ_v.erase(PosZ_v.begin());
-                  PosZ_v.push_back((double)temp);
-            } catch (const std::runtime_error& e) {
-            }
-
-            // Zapisanie obecnego sterowania 03
-            tempchar[0] = UART_Data_Recived[30];
-            tempchar[1] = UART_Data_Recived[31];
-            tempchar[2] = UART_Data_Recived[32];
-            tempchar[3] = UART_Data_Recived[33];
-            tempchar[4] = UART_Data_Recived[34];
-
-            try {
-                float temp =  atof(tempchar) - 500;
-                   RotZ_v.erase(RotZ_v.begin());
-                   RotZ_v.push_back((double)temp);
-            } catch (const std::runtime_error& e) {
-                cout<<"Blad odczytu danych z Platformy(Rot_Z)"<<endl;
-            }
-
-
-            // Zapisanie zadanego sterowania 01
-            tempchar[0] = UART_Data_Recived[36];
-            tempchar[1] = UART_Data_Recived[37];
-            tempchar[2] = UART_Data_Recived[38];
-            tempchar[3] = UART_Data_Recived[39];
-            tempchar[4] = UART_Data_Recived[40];
-
-            try {
-                float temp =  atof(tempchar) - 500;
-                    SetPosX_v.erase(SetPosX_v.begin());
-                   SetPosX_v.push_back((double)temp);
-
-            } catch (const std::runtime_error& e) {
-cout<<"Blad odczytu danych z Platformy(Set_PosX)"<<endl;
-            }
-
-            // Zapisanie zadanego sterowania 02
-            tempchar[0] = UART_Data_Recived[42];
-            tempchar[1] = UART_Data_Recived[43];
-            tempchar[2] = UART_Data_Recived[44];
-            tempchar[3] = UART_Data_Recived[45];
-            tempchar[4] = UART_Data_Recived[46];
-
-            try {
-                float temp =  atof(tempchar) - 500;
-
-                    SetPosY_v.erase(SetPosY_v.begin());
-                    SetPosY_v.push_back((double)temp);
-
-
-            } catch (const std::runtime_error& e) {
-                cout<<"Blad odczytu danych z Platformy(Set_PosY)"<<endl;
-            }
-
-            // Zapisanie zadanego sterowania 03
-            tempchar[0] = UART_Data_Recived[48];
-            tempchar[1] = UART_Data_Recived[49];
-            tempchar[2] = UART_Data_Recived[50];
-            tempchar[3] = UART_Data_Recived[51];
-            tempchar[4] = UART_Data_Recived[52];
-
-            try {
-                float temp =  atof(tempchar) - 500;
-                   SetPosZ_v.erase(SetPosZ_v.begin());
-                   SetPosZ_v.push_back((double)temp);
-            } catch (const std::runtime_error& e) {
-                cout<<"Blad odczytu danych z Platformy(Set_PosZ)"<<endl;
-            }
-
-
-                // plot_refresh ++;
-
-        // <<<<<<<<<< Zapisanie danych do historii
-
 
             //Wyczyszczenie otrzymanej tablicy
             itr = 0;
@@ -649,47 +389,6 @@ cout<<"Blad odczytu danych z Platformy(Set_PosX)"<<endl;
             auto diff = end - begin;
             begin = std::chrono::steady_clock::now();
             //cout <<"ITER: " << chrono::duration_cast<std::chrono::milliseconds>(diff).count() << endl;
-/*
-            //Wyrysowanie wykresow
-            //if(tryb_wyswietlania == ON){
-                if(plot_refresh>350) {
-                    if(mode == 0) {
-                       /* plot10.update(t,PosX_v);
-                        plot20.update(t,PosY_v);
-
-                        plot11.update(t,RotX_v);
-                        plot21.update(t,RotY_v);
-
-                        plot12.update(t,SetPosX_v);
-                        plot22.update(t,SetPosY_v);
-
-                    } else if (mode == 1) {
-
-                        plot10.update(t,PosX_v);
-                        plot20.update(t,PosY_v);
-                        plot30.update(t,PosZ_v);
-
-                        plot11.update(t,RotX_v);
-                        plot21.update(t,RotY_v);
-                        plot31.update(t,RotZ_v);
-
-                        plot12.update(t,SetPosX_v);
-                        plot22.update(t,SetPosY_v);
-                        plot32.update(t,SetPosZ_v);
-
-                    }
-
-
-                   // plot_refresh = 0;
-                   // plt::pause(0.00001);
-
-                }
-           // } else if (tryb_wyswietlania == SAVE) {
-
-           // }
-
-*/
-
 
             //Wyswietlenie obrazu
             imshow(Okno_01,src_rot);
@@ -698,39 +397,10 @@ cout<<"Blad odczytu danych z Platformy(Set_PosX)"<<endl;
             // <<<<<<<<<< DIAGNOSTYKA
 
             // Wcisniecie przyciku zarzymuje cykl
-int numer_przycisku = waitKey(1);
-cout<<numer_przycisku<<endl;
-            if (numer_przycisku == 27) {
-                //Archiwizacja danych w pliku tekstowym
-                ofstream zapis;
+int Button_Number = waitKey(1);
 
-                //Deklaracja nazwy pliku
-                time_t czas;
-                time(&czas);
-                struct tm *ptr;
-                ptr = localtime(&czas);
-                char TEXTFILE_NAME[] = "/home/pi/Desktop/Data/2020_12_31_12_59.txt";
-                sprintf(TEXTFILE_NAME,"/home/pi/Desktop/Data/%04d_%02d_%02d_%02d_%02d_%02d.txt",
-                        ptr->tm_year+1900, ptr->tm_mon+1, ptr->tm_mday, ptr->tm_hour, ptr->tm_min, ptr->tm_sec);
-
-                 //Otwarcie pliku tekstowego
-                zapis.open(TEXTFILE_NAME,ios::out | ios::app);
-
-                //Zapisanie zmiennych
-                for( int i = 0; i < PosX_v.size(); i++ )
-                     zapis<<PosX_v[i]<<";"<<PosY_v[i]<<";"<<SetPosX_v[i]<<";"<<SetPosY_v[i]<<";"<<RotX_v[i]<<";"<<RotY_v[i]<<";"<<endl;
-                //Zamkniecie pliku
-                 zapis.close();
+            if (Button_Number == 27) {
                 return 0;
-            }
-
-            if (numer_przycisku == 97 ) {
-                komenda = 1;
-                cout<<"DONE"<<endl;
-            }
-            if (numer_przycisku == 115) {
-                komenda = 2;
-                cout<<"DONE"<<endl;
             }
         }
         // >>>>>>>>>> GUI: Oczekiwanie na akcje uzytkownika
