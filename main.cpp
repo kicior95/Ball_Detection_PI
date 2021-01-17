@@ -25,7 +25,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 
-
+#include "opencv2/highgui/highgui.hpp"
 #include <boost/tuple/tuple.hpp>
 #include "matplotlibcpp.h"
 
@@ -66,8 +66,6 @@ float Pos_Y_Set = 0;
 int mode = 0;
 
 
-
-
 int MaxAreaContourId(vector <vector<cv::Point>> contours);
 string RunCMD(const char* cmd);
 Vector2D CircleCenter(Vector2D Point01, Vector2D Point02, Vector2D Point03);
@@ -80,7 +78,15 @@ float AngleBetweenVector(Vector2D Wektor_01, Vector2D  Wektor_02);
 Vector2D FlipedVector(Vector2D Wektor_01);
 Vector2D CalcPos(Vector2D Ball_Pos_Image, Vector2D  CircleCenter, float AngleOfMainVector);
 
+
+void wywolanieMyszki(int zdarzenie, int x, int y, int flagi, void* parametr);
+
+
+
+
 int main() {
+
+
 
     // >>>>>>>>>> Inicjalizacja stałych
 
@@ -89,12 +95,12 @@ int main() {
     ImageAxisY.x = 0;
     ImageAxisY.y = 100;
 
-    Joint_01.x = 103;
-    Joint_01.y = 131;
-    Joint_02.x = 122;
-    Joint_02.y = 550;
-    Joint_03.x = 463;
-    Joint_03.y = 320;
+    Joint_01.x = 108;
+    Joint_01.y = 138;
+    Joint_02.x = 127;
+    Joint_02.y = 542;
+    Joint_03.x = 467;
+    Joint_03.y = 321;
     Ball.x  = 0;
     Ball.y  = 0;
     BallPosImage.x = 0;
@@ -113,17 +119,6 @@ int main() {
     float RotMainAxis = AngleBetweenVector(ImageAxisX, MainAxis);
     // <<<<<<<<<< Inicjalizacja stałych
 
-    std::vector<double>  PosX_v(400,0);
-    std::vector<double>  SetPosX_v(400, Pos_Y_Set);
-    std::vector<double>  RotX_v(400,0);
-
-    std::vector<double>  PosY_v(400,0);
-    std::vector<double>  SetPosY_v(400, Pos_X_Set);
-    std::vector<double>  RotY_v(400,0);
-
-    std::vector<double>  PosZ_v(400,0);
-    std::vector<double>  SetPosZ_v(400, Pos_Y_Set);
-    std::vector<double>  RotZ_v(400,0);
 
 
     // >>>>>>>>>> Komunikacja UART z STM32
@@ -164,10 +159,14 @@ int main() {
     cap.open(0);
 
     //Konfiguracja sprzetu
+    //RunCMD("v4l2-ctl -d /dev/video0 -c auto_exposure=0 -c exposure_time_absolute=120 -c iso_sensitivity_auto=1 -c iso_sensitivity=4 -c power_line_frequency=1");
     RunCMD("v4l2-ctl -d /dev/video0 -c auto_exposure=0 -c exposure_time_absolute=120 -c iso_sensitivity_auto=1 -c iso_sensitivity=4 -c power_line_frequency=1");
     cap.set(CAP_PROP_FRAME_WIDTH , 640);
     cap.set(CAP_PROP_FRAME_WIDTH , 480);
     cap.set(CAP_PROP_FRAME_WIDTH , 480);
+    cap.set(CAP_PROP_FPS,30);
+    cap.set(CAP_PROP_BUFFERSIZE, 1);
+
 
     //Uruchomienie urzadzenia
     if (!cap.isOpened()) {
@@ -180,12 +179,16 @@ int main() {
     // >>>>>>>>>> Utworzenie okna
     string Okno_01 = "Okno01";
     namedWindow(Okno_01, WINDOW_AUTOSIZE);
+
+
+    setMouseCallback(Okno_01, wywolanieMyszki, NULL);
+
     // <<<<<<<<<< Utworzenie okna
 
     // >>>>>>>>>> Cykl pracy urządzenia
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    static std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-
+static std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     while(1) {
         // >>>>>>>>>> Przechwytywanie obrazu
 
@@ -367,7 +370,7 @@ int main() {
                 UART_Data_Recived[itr] = static_cast<char>(serialGetchar(fd));
                 itr++;
             }
-            cout<<UART_Data_Recived<<endl;
+            //cout<<UART_Data_Recived<<endl;
 
             //Wyczyszczenie otrzymanej tablicy
             itr = 0;
@@ -383,15 +386,19 @@ int main() {
 
             // >>>>>>>>>> GUI: Oczekiwanie na akcje uzytkownika
 
-            //Wyznaczenie predkosci akwiztcji danych
-            UART_Iteration++;
-            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-            auto diff = end - begin;
-            begin = std::chrono::steady_clock::now();
-            //cout <<"ITER: " << chrono::duration_cast<std::chrono::milliseconds>(diff).count() << endl;
 
             //Wyswietlenie obrazu
             imshow(Okno_01,src_rot);
+
+            //Wyznaczenie predkosci akwiztcji danych
+            UART_Iteration++;
+            end = std::chrono::steady_clock::now();
+            auto diff = end - begin;
+            begin = std::chrono::steady_clock::now();
+
+            cout <<"ITER: " << chrono::duration_cast<std::chrono::milliseconds>(diff).count() << endl;
+
+
             // >>>>>>>>>> DIAGNOSTYKA
 
             // <<<<<<<<<< DIAGNOSTYKA
@@ -402,6 +409,9 @@ int Button_Number = waitKey(1);
             if (Button_Number == 27) {
                 return 0;
             }
+
+
+
         }
         // >>>>>>>>>> GUI: Oczekiwanie na akcje uzytkownika
 
@@ -409,7 +419,6 @@ int Button_Number = waitKey(1);
     // <<<<<<<<<< Cykl pracy urządzenia
 
 }
-
 
 
 int MaxAreaContourId(vector <vector<cv::Point>> contours) {
@@ -496,4 +505,10 @@ Vector2D CalcPos(Vector2D Ball_Pos_Image, Vector2D  CircleCenter, float AngleOfM
     results.x = cos(AngleOfMainVector) * temp.x + sin(AngleOfMainVector) * temp.y;
     results.y = -sin(AngleOfMainVector) * temp.x + cos(AngleOfMainVector) * temp.y;
     return results;
+}
+
+void wywolanieMyszki(int zdarzenie, int x, int y, int flagi, void* parametr) {
+    if(zdarzenie == EVENT_LBUTTONDOWN) {
+        cout<<x<<" "<<y<<endl;
+    }
 }
